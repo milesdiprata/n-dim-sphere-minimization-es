@@ -11,6 +11,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace es {
 
@@ -92,17 +93,19 @@ class AdaptiveOnePlusOne {
     return mutation_std_dev_factor_;
   }
 
-  const Individual Start() {
-    double mutation_std_dev = kInitialMutationStdDev;
+  const std::vector<double> Start() {
+    std::vector<double> fitnesses;
 
     Individual first_individual = RandomIndividual();
+    first_individual.fitness = Fitness(first_individual);
+    fitnesses.push_back(first_individual.fitness);
+
+    double mutation_std_dev = kInitialMutationStdDev;
 
     std::size_t num_successful_mutations = 0;
-    std::size_t num_generations = 0;
+    std::size_t num_generations = 1;
 
     while (!Terminate(num_generations)) {
-      ++num_generations;
-
       std::array<double, N> random =
           RandomArray(kMutationMean, mutation_std_dev);
 
@@ -112,9 +115,7 @@ class AdaptiveOnePlusOne {
                      second_individual.object_params.begin(),
                      std::plus<double>());
 
-      first_individual.fitness = Fitness(first_individual);
       second_individual.fitness = Fitness(second_individual);
-
       if (second_individual.fitness < first_individual.fitness) {
         ++num_successful_mutations;
         first_individual = second_individual;
@@ -128,9 +129,15 @@ class AdaptiveOnePlusOne {
       } else if (prop_successful_mutations > kPropSuccessfulMutationThreshold) {
         mutation_std_dev /= mutation_std_dev_factor_;
       }
+
+      fitnesses.push_back(first_individual.fitness);
+      ++num_generations;
     }
 
-    return first_individual;
+    std::cout << "Solution: " << first_individual
+              << " fitness: " << first_individual.fitness << std::endl;
+    // return first_individual;
+    return fitnesses;
   }
 
  protected:
