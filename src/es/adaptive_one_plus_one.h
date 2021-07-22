@@ -56,8 +56,6 @@ class AdaptiveOnePlusOne {
     double fitness;
   };
 
-  using Constraints = std::optional<std::array<Constraint, N>>;
-
   static constexpr const std::size_t kPopulationSize = 2;
   static constexpr const std::size_t kNumIndividualSelections = 1;
   static constexpr const std::size_t kNumParentSelections = 1;
@@ -65,16 +63,34 @@ class AdaptiveOnePlusOne {
 
   static constexpr const double kMutationMean = 0.0;
   static constexpr const double kInitialMutationStdDev = 0.02886751345;
-  static constexpr const double kMutationStdDevFactor = 0.817;
+  static constexpr const double kDefaultMutationStdDevFactor = 0.667489;
   static constexpr const double kPropSuccessfulMutationThreshold = 0.2;
 
-  constexpr AdaptiveOnePlusOne(const Constraints& constraints = std::nullopt)
-      : constraints_(constraints), mt_(std::random_device{}()) {}
+  constexpr AdaptiveOnePlusOne(
+      const std::optional<std::array<Constraint, N>>& constraints =
+          std::nullopt,
+      const double mutation_std_dev_factor = kDefaultMutationStdDevFactor)
+      : constraints_(constraints),
+        mutation_std_dev_factor_(mutation_std_dev_factor),
+        mt_(std::random_device{}()) {}
 
   virtual constexpr ~AdaptiveOnePlusOne() = default;
 
-  constexpr const Constraints& constraints() const { return constraints_; }
-  constexpr Constraints& constraints() { return constraints_; }
+  constexpr const std::optional<std::array<Constraint, N>>& constraints()
+      const {
+    return constraints_;
+  }
+  constexpr std::optional<std::array<Constraint, N>>& constraints() {
+    return constraints_;
+  }
+
+  constexpr const double mutation_std_dev_factor() const {
+    return mutation_std_dev_factor_;
+  }
+
+  constexpr double& mutation_std_dev_factor() {
+    return mutation_std_dev_factor_;
+  }
 
   const Individual Start() {
     double mutation_std_dev = kInitialMutationStdDev;
@@ -108,27 +124,17 @@ class AdaptiveOnePlusOne {
           (double)num_successful_mutations / num_generations;
 
       if (prop_successful_mutations < kPropSuccessfulMutationThreshold) {
-        mutation_std_dev *= (kMutationStdDevFactor * kMutationStdDevFactor);
+        mutation_std_dev *= mutation_std_dev_factor_;
       } else if (prop_successful_mutations > kPropSuccessfulMutationThreshold) {
-        mutation_std_dev /= (kMutationStdDevFactor * kMutationStdDevFactor);
+        mutation_std_dev /= mutation_std_dev_factor_;
       }
-
-      std::cout << first_individual << " f=" << first_individual.fitness
-                << std::endl;
     }
 
     return first_individual;
   }
 
  protected:
-  virtual constexpr const double Fitness(const Individual& Individual) {
-    double sum = 0;
-    for (const auto& param : Individual.object_params) {
-      sum += (param * param);
-    }
-
-    return sum;
-  }
+  virtual constexpr const double Fitness(const Individual& individual) = 0;
 
  private:
   constexpr const bool Terminate(const std::size_t num_generations) const {
@@ -162,7 +168,8 @@ class AdaptiveOnePlusOne {
     return array;
   }
 
-  Constraints constraints_;
+  std::optional<std::array<Constraint, N>> constraints_;
+  double mutation_std_dev_factor_;
   std::mt19937_64 mt_;
 };
 

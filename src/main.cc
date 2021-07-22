@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "es/adaptive_one_plus_one.h"
+#include "sphere/func_solver.h"
 
 int main(const int argc, const char* const argv[]) {
-  es::AdaptiveOnePlusOne<2>::Constraint constraint(-5.12, 5.12);
-  es::AdaptiveOnePlusOne<2> solver(
-      es::AdaptiveOnePlusOne<2>::Constraints({constraint, constraint}));
+  sphere::FuncSolver<> solver;
   auto individual = solver.Start();
 
-  std::cout << individual << std::endl;
+  std::cout << "Solution: " << individual << " fitness: " << individual.fitness
+            << std::endl;
+
   return 0;
 }
