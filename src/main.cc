@@ -11,7 +11,7 @@ int main(const int argc, const char* const argv[]) {
   auto csv_file = std::ofstream("fitnesses.csv", std::fstream::out);
   csv_file << "generation,fitness" << std::endl;
 
-  sphere::FuncSolver<> solver(1.0);
+  sphere::FuncSolver<> solver;
 
   std::map<std::size_t, double> avg_fitnesses;
   for (int i = 0; i < kNumTests; ++i) {
