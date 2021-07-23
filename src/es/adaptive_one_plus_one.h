@@ -11,7 +11,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 namespace es {
 
@@ -64,15 +64,14 @@ class AdaptiveOnePlusOne {
 
   static constexpr const double kMutationMean = 0.0;
   static constexpr const double kInitialMutationStdDev = 0.02886751345;
-  static constexpr const double kDefaultMutationStdDevFactor = 0.667489;
+  static constexpr const double kDefaultCValue = 0.817;
   static constexpr const double kPropSuccessfulMutationThreshold = 0.2;
 
-  constexpr AdaptiveOnePlusOne(
-      const std::optional<std::array<Constraint, N>>& constraints =
-          std::nullopt,
-      const double mutation_std_dev_factor = kDefaultMutationStdDevFactor)
+  constexpr AdaptiveOnePlusOne(const std::optional<std::array<Constraint, N>>&
+                                   constraints = std::nullopt,
+                               const double c_value = kDefaultCValue)
       : constraints_(constraints),
-        mutation_std_dev_factor_(mutation_std_dev_factor),
+        c_value_(c_value),
         mt_(std::random_device{}()) {}
 
   virtual constexpr ~AdaptiveOnePlusOne() = default;
@@ -85,27 +84,23 @@ class AdaptiveOnePlusOne {
     return constraints_;
   }
 
-  constexpr const double mutation_std_dev_factor() const {
-    return mutation_std_dev_factor_;
-  }
+  constexpr const double c_value() const { return c_value_; }
+  constexpr double& c_value() { return c_value_; }
 
-  constexpr double& mutation_std_dev_factor() {
-    return mutation_std_dev_factor_;
-  }
-
-  const std::vector<double> Start() {
-    std::vector<double> fitnesses;
-
-    Individual first_individual = RandomIndividual();
-    first_individual.fitness = Fitness(first_individual);
-    fitnesses.push_back(first_individual.fitness);
+  const std::unordered_map<std::size_t, double> Start() {
+    std::size_t num_successful_mutations = 0;
+    std::size_t generation = 0;
 
     double mutation_std_dev = kInitialMutationStdDev;
 
-    std::size_t num_successful_mutations = 0;
-    std::size_t num_generations = 1;
+    Individual first_individual = RandomIndividual();
+    first_individual.fitness = Fitness(first_individual);
 
-    while (!Terminate(num_generations)) {
+    std::unordered_map<std::size_t, double> fitnesses;
+    fitnesses[generation] = first_individual.fitness;
+    ++generation;
+
+    while (!Terminate(generation)) {
       std::array<double, N> random =
           RandomArray(kMutationMean, mutation_std_dev);
 
@@ -122,16 +117,16 @@ class AdaptiveOnePlusOne {
       }
 
       double prop_successful_mutations =
-          (double)num_successful_mutations / num_generations;
+          (double)num_successful_mutations / generation;
 
       if (prop_successful_mutations < kPropSuccessfulMutationThreshold) {
-        mutation_std_dev *= mutation_std_dev_factor_;
+        mutation_std_dev *= (c_value_ * c_value_);
       } else if (prop_successful_mutations > kPropSuccessfulMutationThreshold) {
-        mutation_std_dev /= mutation_std_dev_factor_;
+        mutation_std_dev /= (c_value_ * c_value_);
       }
 
-      fitnesses.push_back(first_individual.fitness);
-      ++num_generations;
+      fitnesses[generation] = first_individual.fitness;
+      ++generation;
     }
 
     std::cout << "Solution: " << first_individual
@@ -144,8 +139,8 @@ class AdaptiveOnePlusOne {
   virtual constexpr const double Fitness(const Individual& individual) = 0;
 
  private:
-  constexpr const bool Terminate(const std::size_t num_generations) const {
-    return num_generations > kNumGenerations;
+  constexpr const bool Terminate(const std::size_t generation) const {
+    return generation > kNumGenerations;
   }
 
   const Individual RandomIndividual() {
@@ -176,7 +171,7 @@ class AdaptiveOnePlusOne {
   }
 
   std::optional<std::array<Constraint, N>> constraints_;
-  double mutation_std_dev_factor_;
+  double c_value_;
   std::mt19937_64 mt_;
 };
 

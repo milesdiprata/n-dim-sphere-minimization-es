@@ -16,14 +16,17 @@ class FuncSolver : public es::AdaptiveOnePlusOne<N> {
   using Constraint = typename es::AdaptiveOnePlusOne<N>::Constraint;
   using Individual = typename es::AdaptiveOnePlusOne<N>::Individual;
 
-  static constexpr const Constraint kConstraint = Constraint(-5.12, 5.12);
+  static constexpr const double kSolutionLowerLimit = -5.12;
+  static constexpr const double kSolutionUpperLimit = 5.12;
+
+  static constexpr const Constraint kConstraint =
+      Constraint(kSolutionLowerLimit, kSolutionUpperLimit);
 
   constexpr FuncSolver()
       : es::AdaptiveOnePlusOne<N>(MakeConstraints(kConstraint)) {}
 
-  constexpr FuncSolver(const double mutation_std_dev_factor)
-      : es::AdaptiveOnePlusOne<N>(MakeConstraints(kConstraint),
-                                  mutation_std_dev_factor) {}
+  constexpr FuncSolver(const double c_value)
+      : es::AdaptiveOnePlusOne<N>(MakeConstraints(kConstraint), c_value) {}
 
   virtual constexpr ~FuncSolver() = default;
 
