@@ -36,3 +36,6 @@
 
 # CSV
 *.csv
+
+# Pyenv
+.python-version
