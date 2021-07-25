@@ -11,6 +11,8 @@ from deap import benchmarks
 from deap import creator
 from deap import tools
 
+from matplotlib import pyplot as plt
+
 IND_SIZE = 10
 MIN_VALUE = -5.12
 MAX_VALUE = 5.12
@@ -20,21 +22,21 @@ C_VALUE = 0.87
 
 
 class StrategyOnePlusOne(cma.StrategyOnePlusLambda):
+    LAMBDA = 1
     ONE_FIFTH = 1.0 / 5.0
 
     def __init__(self, parent, sigma, c_value, **kwargs):
         super().__init__(parent, sigma, **kwargs)
-        self.lambda_ = 1
-        self.alpha = (c_value * c_value)
+        kwargs.update(lambda_=self.LAMBDA)
+        self.sigma_factor = (c_value * c_value)
 
     def update(self, population):
         super().update(population)
 
-        print(self.psucc)
         if self.psucc < self.ONE_FIFTH:
-            self.sigma *= self.alpha
+            self.sigma *= self.sigma_factor
         elif self.psucc > self.ONE_FIFTH:
-            self.sigma /= self.alpha
+            self.sigma /= self.sigma_factor
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -70,7 +72,13 @@ def main():
 
     pop, logbook = algorithms.eaGenerateUpdate(
         toolbox, ngen=NUM_GENS, halloffame=hof, stats=stats)
-    # return pop, logbook, hof
+
+    plt.clf()
+    plt.title(r"DEAP ES Solution Evolution, $c = {}$".format(str(C_VALUE)))
+    plt.xlabel(r"$k$")
+    plt.ylabel(r"$f(\mathbf{x}_k)$")
+    plt.plot(logbook.select("gen"), logbook.select("avg"))
+    plt.savefig("deap_es_fitnesses.png")
 
 
 if __name__ == "__main__":
